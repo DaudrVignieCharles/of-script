@@ -1,0 +1,59 @@
+#!/usr/bin/python3.4
+# -*-coding:UTF8 -*
+
+#    'strformat' is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    any later version.
+#
+#    'strformat' is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with 'strformat'.  If not, see <http://www.gnu.org/licenses/>.
+
+import argparse
+import missautil
+
+parser = argparse.ArgumentParser(prog='strformat', description="""Format a string with ANSI sequence""")
+parser.add_argument('text', action="store", type=str, help='text to format')
+parser.add_argument('-c', '--color', nargs='?', action="store", type=str, default=None, help='text color')
+parser.add_argument('-f', '--foreground', nargs='?', action="store", type=str, default=None, help='background color')
+parser.add_argument('-t', '--typo', nargs='?', action="store", type=str, default=None, help='police format(s)')
+args=parser.parse_args()
+text=args.text
+color=args.color
+foreground=args.foreground
+police=args.typo
+
+colorCodes={ None: None,  'black': '30', 'red': '31',  'green': '32',\
+    'yellow': '33', 'blue': '34', 'magenta': '35', 'cyan': '36', 'white': '37' }
+foregroundCodes={ None: None, 'black': '40', 'red': '41',  'green': '42',\
+    'yellow': '43', 'blue': '44', 'magenta': '45', 'cyan': '46', 'white': '47' }
+policeCodes={ None: None, 'normal': '0', 'bold': '1', 'nbold': '21',\
+    'under': '4', 'nunder': '24', 'blink': '5', 'nblink': '25', 'inverse': '7', 'ninverse': '27' }
+close='\033[0m'
+form='\033['
+if police is not None:
+    police=police.split()
+try :
+    for i in colorCodes[color], foregroundCodes[foreground]:
+        if i!=None:
+            form=form+i+';'
+except KeyError as err:
+    print(err, "is not a valid color code.\nValid codes are :\nblack, red, green, yellow, blue, magenta, cyan, white")
+    exit(1)
+try:
+    if police is not None:
+        for i in police:
+            form=form+policeCodes[i]+';'
+except KeyError as err:
+    print(err, "is not a valid typo code.\n Valid codes are :\nnormal, bold, nbold, under, nunder, blink, nblink, inverse, ninverse")
+    exit(1)
+
+form=form[0:len(form)-1]+'m'
+fstring=form+text+close
+print(fstring)
+

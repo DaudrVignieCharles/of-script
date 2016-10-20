@@ -1,0 +1,51 @@
+#!/usr/bin/python3.4
+# -*-coding:UTF8 -*
+#
+# Copyright 2016 Charles Daudré-Vignier <daudre.vignier.charles@narod.ru>
+#
+#    'iftop_choice' is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    any later version.
+#
+#    'iftop_choice' is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with 'iftop_choice'.  If not, see <http://www.gnu.org/licenses/>.
+
+import os
+import time
+
+ts = os.get_terminal_size()
+ncolumns=int(ts.columns)
+shellscript='sudo iftop -i '
+while 1:
+    try:
+        while 1:
+            os.system('clear')
+            interface=int(input("Quelle interface réseaux voulez vous surveiller ?\n1 : wlan0\n2 : eth0\n3 : exit\n>>> "))
+            if interface==1:
+                os.system(shellscript+'wlan0')
+            elif interface==2:
+                os.system(shellscript+'eth0')
+            elif interface==3:
+                quit()
+            else :
+                os.system('clear')
+                errmsg0=str("ERREUR : Veuillez rentrer l'un des chiffres indiqués")
+                print("\n\n", errmsg0.center(ncolumns))
+                input()
+    except KeyboardInterrupt:
+        os.system('clear')
+        errmsg1=str('Keyboard Interrupt : Exiting')
+        print("\n\n", errmsg1.center(ncolumns))
+        time.sleep(2)
+        quit()
+    except ValueError:
+        os.system('clear')
+        errmsg2=str('ERREUR : Veuillez rentrer un chiffre')
+        print("\n\n", errmsg2.center(ncolumns))
+        input()

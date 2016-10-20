@@ -1,0 +1,72 @@
+#!/usr/bin/python3.4
+# -*-coding:UTF8 -*
+#
+# Copyright 2016 Charles Daudré-Vignier <daudre.vignier.charles@narod.ru>
+#
+#    'iftop_choice' is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    any later version.
+#
+#    'iftop_choice' is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with 'iftop_choice'.  If not, see <http://www.gnu.org/licenses/>.
+
+import os
+import curses
+
+def cexit():
+    curses.curs_set(1)
+    curses.nocbreak()
+    curses.echo()
+    curses.endwin()
+
+screen=curses.initscr()
+
+ts = os.get_terminal_size()
+ncolumns=int(ts.columns)
+ncolumns=int((ncolumns-28)/2)
+nlines=int(ts.lines)
+nlines=int(nlines/2)
+shellscript='nmtui-'
+while 1:
+    try:
+        while 1:
+            curses.noecho()
+            curses.curs_set(0)
+            curses.cbreak()
+            screen.keypad(1)
+            screen.clear()
+            screen.addstr(nlines-3, ncolumns, "┌──┤ NetworkManager TUI ├──┐\n")
+            screen.addstr(nlines-2, ncolumns, "│                          │\n")
+            screen.addstr(nlines-1, ncolumns, "│ Please select an option  │\n")
+            screen.addstr(nlines, ncolumns, "│                          │\n")
+            screen.addstr(nlines+1, ncolumns, "│e : Edit a connection     │\n")
+            screen.addstr(nlines+2, ncolumns, "│a : Activate a connection │\n")
+            screen.addstr(nlines+3, ncolumns, "│x : Exit                  │\n")
+            screen.addstr(nlines+4, ncolumns, "└──────────────────────────┘\n")
+            action=screen.getch()
+            if action==ord("e"):
+                os.system(shellscript+'edit')
+            elif action==ord("a"):
+                os.system(shellscript+'connect')
+            elif action==ord("x"):
+                cexit()
+                quit()
+            else:
+                continue
+    except KeyboardInterrupt:
+        cexit()
+        os.system('clear')
+        errmsg1=str('Keyboard Interrupt : Exiting')
+        print("\n\n", errmsg1.center(ts.columns))
+        quit()
+    except ValueError:
+        os.system('clear')
+        errmsg2=str('ERREUR : Veuillez rentrer un chiffre')
+        print("\n\n", errmsg2.center(ts.columns))
+        input()

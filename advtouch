@@ -1,0 +1,183 @@
+#!/usr/bin/python3.4
+# -*-coding:UTF8 -*
+#
+# Copyright 2016 Charles Daudré-Vignier <daudre.vignier.charles@narod.ru>
+#
+#    'advtouch' is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    any later version.
+#
+#    'advtouch' is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with 'advtouch'.  If not, see <http://www.gnu.org/licenses/>.
+
+import os
+import argparse
+import lib.advtouch as libadvtouch
+import etc.advtouch_conf as advtouch_conf
+import lib.lib_generic as ofscript_generic
+from time import strftime
+
+
+if not os.geteuid():
+    files = ['./etc/advtouch_conf.py', './lib/advtouch.py']
+    list_owner_grp=[]
+    owner = ''
+    for i in files:
+        owner_grp = ofscript_generic.cprint("""/bin/ls -l """+i+"""|awk '{print $3" "$4}'""").split()
+        for j in owner_grp:
+            list_owner_grp.append(j)
+    for i in list_owner_grp:
+        if i!='root':
+            print('You should not run this version of advtouch as root if root is not owner of ./lib/advtouch.py and ./etc/advtouch_conf.py')
+            input('Do you still launch advtouch as root ? Y/N')
+
+
+# Get script argument from command-line
+
+parser = argparse.ArgumentParser(description='See --H or --verbose-help for description.')
+if '-H' in os.sys.argv or '--verbose-help' in os.sys.argv:
+    print("""advtouch : Generate file based on his file type.
+File types are Python (2.7-3.4), C, C++, Bash, ZSH, desktop.
+File contain :  copyright (except for desktop file),
+                useful include for C and C++,
+                the good shebang for Python, Bash and ZSH,
+                and file is executable for Python, Bash and ZSH.
+'--desktop' option run an interactive mode.""")
+    exit()
+parser.add_argument('-H', '--verbose-help', action = 'store_true', default = False, help = 'Verbose help, description of advtouch')
+parser.add_argument('file', action = "store", type = str, help = 'Place the output into <file>')
+parser.add_argument('-p', '--python', action = "store_true", default = False, help = 'Generate Python 3.4 file')
+parser.add_argument('-o','--oldpython', action = 'store_true', default = False, help = 'Generate Python 2.7 file')
+parser.add_argument('-b', '--bash', action = 'store_true', default = False, help = 'Generate Bash file')
+parser.add_argument('-z', '--zsh', action = 'store_true', default = False, help = 'Generate ZSH file')
+parser.add_argument('-c', '--c', action = 'store_true', default = False, help = 'Generate C file')
+parser.add_argument('-g', '--cpp', action = 'store_true', default = False, help = 'Generate C++ file')
+parser.add_argument('-d', '--desktop', action = 'store_true', default = False, help = 'Generate desktop file (interactiv mode)')
+
+args = parser.parse_args()
+
+
+# Argument to variable
+
+name = args.file
+py3 = args.python
+py2 = args.oldpython
+bash = args.bash
+zsh = args.zsh
+c = args.c
+cpp = args.cpp
+desktop = args.desktop
+
+
+# Test arguments number
+j=0
+for i in py3, py2, bash, zsh, c, cpp, desktop:
+    if i:
+        j+=1
+if j > 1:
+    print("usage: advtouch [-h] [-H] [-p] [-o] [-b] [-z] [-c] [-g] [-d] nom\nadvtouch: error: You can specify only one filetype (see --help).")
+    exit(1)
+elif not j:
+    print("usage: advtouch [-h] [-H] [-p] [-o] [-b] [-z] [-c] [-g] [-d] nom\nadvtouch: error: You must specify one filetype (see --help).")
+    exit()
+
+if desktop:
+    print('\x1bc')
+
+# Function definition
+
+
+
+
+### Main part of script
+
+# Test language for file extension
+
+if c:
+    name = name + '.c'
+elif cpp:
+    name = name + '.cpp'
+elif desktop:
+    name = name + '.desktop'
+
+# Test if file in argument exist
+
+if os.path.exists(name):
+    while True:
+        test = input("Attention, le fichier '{0}' existe déjà, voulez-vous le supprimer ? Y/N : ".format(name))
+        test = test.lower()
+        if test == 'y':
+            break
+        elif test == 'n':
+            exit()
+        else :
+            print('Veuillez entrer Y ou N')
+            input()
+            libadvtouch.erase(3)
+
+# Test if language need a shebang and set the good shebang (python2, python3, bash, zsh)
+
+sb = False
+if py3:
+    shebang = '/usr/bin/python3.4\n# -*-coding:UTF8 -*'
+    sb = True
+elif py2:
+    shebang = '/usr/bin/python2.7\n# -*-coding:UTF8 -*'
+    sb = True
+elif bash :
+    shebang = '/bin/bash'
+    sb = True
+elif zsh :
+    shebang = '/bin/zsh'
+    sb = True
+
+# If language need shebang, build special shebang text
+
+if sb :
+    shebangtxt = "#!{shebang}\n".format(shebang=shebang)+advtouch_conf.shebangtxt.format(name=name, year=strftime('%Y'))
+
+# Build include if language is C or C++
+
+if c:
+    include = advtouch_conf.c_include
+elif cpp:
+    include = advtouch_conf.cpp_include
+
+# Build special C, C++ text (with the good include indeed)
+
+if c or cpp:
+    ctxt = advtouch_conf.ctxt.format(name=name, year=strftime('%Y'), include=include)
+
+    ctxt=ctxt+"""
+main()
+{
+    
+    return 0;
+}"""
+
+# with -d, --desktop parameter : generate a desktop file based on user input
+
+if desktop:
+    desktxt = libadvtouch.desktop_generator()
+
+# Open the file, write it in function of language/desktop specified in argument and close it.
+
+file = open(name, 'w')
+if c or cpp:
+    file.write(ctxt)
+elif desktop:
+    file.write(desktxt)
+else:
+    file.write(shebangtxt)
+file.close()
+
+# If language is a "shebang" language, give right 755 to file.
+
+if sb:
+    os.chmod(name, 0o755)

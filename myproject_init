@@ -1,0 +1,107 @@
+#!/bin/zsh
+
+# Copyright 2016 Charles Daudré-Vignier <daudre.vignier.charles@narod.ru>
+
+#    'myproject_init' is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    any later version.
+#
+#    'myproject_init' is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with 'myproject_init'.  If not, see <http://www.gnu.org/licenses/>.
+
+main(){
+    # $1 - chemin d'éxécution du script, dossier courant par défaut'
+    scriptpath=$1
+
+    [ -n "$scriptpath" ] || scriptpath="."
+    [ -d "$scriptpath" ] || ( echo "'$scriptpath' is not a directory.\nExiting." && exit )
+
+    case $scriptpath in
+        '.'|$(echo $PWD)) fscriptpath='courant'
+        ;;
+        *) fscriptpath=$scriptpath
+        ;;
+    esac
+
+    echo -n "Initialiser un projet dans le dossier $fscriptpath\n Y/N ? "
+    read rep
+
+    case $rep in
+        y|Y) :
+        ;;
+        n|N) echo "Exiting"&& exit
+        ;;
+    esac
+
+    cd $scriptpath
+
+    f_authors(){
+        tee AUTHORS <<< "Daudré-Vignier Charles <daudre.vignier.charles@narod.ru>"
+    }
+
+    f_copying(){
+        local date=$(date +%G) ;
+        tee COPYING <<EOF&&
+Copyright $date Charles Daudré-Vignier <daudre.vignier.charles@narod.ru>
+
+All these softwares are free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    These softwares are distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with these softwares.  If not, see <http://www.gnu.org/licenses/>.
+EOF
+    }
+
+    f_gitg(){
+        tee gitg <<EOF&&
+#!/bin/sh
+gitg
+EOF
+        chmod +x gitg
+     }
+
+     f_gitgui(){
+        tee gitgui <<EOF&&
+#!/bin/sh
+git gui
+EOF
+        chmod +x gitgui
+    }
+
+    f_gitk(){
+        tee gitk <<EOF&&
+#!/bin/sh
+gitk
+EOF
+        chmod +x gitk
+    }
+
+    f_wget(){
+        wget https://www.gnu.org/licenses/gpl-3.0.txt && mv gpl-3.0.txt LICENSE
+    }
+
+    echo -n "Création du fichier auteurs "&& f_authors >/dev/null 2>&1&& echo "\033[32;1m[OK]\033[0m" || echo "\033[31;1m[ECHEC]\033[0m"&&
+    echo -n "Création du fichier copyright "&& f_copying >/dev/null 2>&1&& echo "\033[32;1m[OK]\033[0m" || echo "\033[31;1m[ECHEC]\033[0m"&&
+    echo -n "Création du fichier executable gitg "&& f_gitg >/dev/null 2>&1&& echo "\033[32;1m[OK]\033[0m" || echo "\033[31;1m[ECHEC]\033[0m"&&
+    echo -n "Création du fichier executable gitgui "&& f_gitgui >/dev/null 2>&1&& echo "\033[32;1m[OK]\033[0m" || echo "\033[31;1m[ECHEC]\033[0m"&&
+    echo -n "Création du fichier executable gitk "&& f_gitk >/dev/null 2>&1&& echo "\033[32;1m[OK]\033[0m" || echo "\033[31;1m[ECHEC]\033[0m"&&
+    echo -n "Téléchargement de la license GNUGPL v3 "&& f_wget >/dev/null 2>&1&& echo "\033[32;1m[OK]\033[0m" || echo "\033[31;1m[ECHEC]\033[0m"&&
+    echo -n "Initialisation du dépot Git "&& git init >/dev/null 2>&1&& echo "\033[32;1m[OK]\033[0m" || echo "\033[31;1m[ECHEC]\033[0m"&&
+
+    return 0
+}
+
+main $scriptpath

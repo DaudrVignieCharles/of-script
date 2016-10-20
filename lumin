@@ -1,0 +1,80 @@
+#!/usr/bin/python3.4
+# -*-coding:UTF8 -*
+#
+# Copyright 2016 Charles Daudré-Vignier <daudre.vignier.charles@narod.ru>
+#
+#    'lumin' is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    any later version.
+#
+#    'lumin' is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with 'lumin'.  If not, see <http://www.gnu.org/licenses/>.
+import os
+import argparse
+
+def shellscript(lumin_wanted):
+    os.system('echo {0} > /sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-eDP-1/intel_backlight/brightness'.format(lumin_wanted))
+
+parser = argparse.ArgumentParser(prog='lumin', description="""Change brightness of active screen""")
+parser.add_argument('brightness', nargs='?', action="store", type=int, help='percentage of brightness that you want')
+parser.add_argument('-u', '--up', action="store_true", default=False, help='+10 percent of brightness')
+parser.add_argument('-d', '--down', action="store_true", default=False, help='-10 percent of brightness')
+parser.add_argument('-p', '--print', action="store_true", default=False, help='print actual brightness')
+args=parser.parse_args()
+brightness=args.brightness
+plus=args.up
+moins=args.down
+actual=args.print
+os.chdir('/sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-eDP-1/intel_backlight')
+backlight=open("actual_brightness", "r")
+backlight=backlight.read()
+backlight=int(backlight.strip())
+max_brightness=open("max_brightness", "r")
+max_brightness=max_brightness.read()
+max_brightness=int(max_brightness.strip())
+
+
+if actual==True:
+    percent_backlight=int((backlight/max_brightness)*100)
+    print(str(percent_backlight)+"%,",backlight)
+    exit(0)
+if brightness!=None:
+    lumin=int(max_brightness*(brightness/100))
+tenper=int(max_brightness*0.1)
+if brightness==None:
+    br=False
+else :
+    br=True
+allopt=[br, plus, moins]
+a=0
+for elem in allopt:
+    if elem==True:
+        a+=1
+if a>1 :
+    print("Please do not enter more than one argument")
+    quit()
+elif a==0 :
+    print("Change brightness of active screen\nusage: lumin [-h] [-u] [-d] [-p] [brightness]")
+    quit()
+else:
+    if br==True:
+        if brightness<0 or brightness>100:
+            print('Please enter a number between 1 and 100')
+            exit(1)
+        shellscript(lumin)
+    elif moins==True:
+        lumin=backlight-tenper
+        if lumin<0:
+            lumin=0
+        shellscript(lumin)
+    elif plus==True:
+        lumin=backlight+tenper
+        if lumin>max_brightness:
+            lumin=max_brightness
+        shellscript(lumin)

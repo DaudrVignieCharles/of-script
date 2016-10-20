@@ -1,0 +1,49 @@
+#!/usr/bin/python3.4
+# -*-coding:UTF8 -*
+
+# Copyright 2016 Charles Daudré-Vignier <daudre.vignier.charles@narod.ru>
+
+#    'logspynow' is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    any later version.
+#
+#    'logspynow' is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with 'logspynow'.  If not, see <http://www.gnu.org/licenses/>.
+
+import argparse
+import os
+
+#OS.sys.path.insert(0, "/usr/")
+
+
+parser = argparse.ArgumentParser(description="""Monitor logs. Monitor auth, kern, daemon, sys, user, without argument.""")
+parser.add_argument('--packages', '-p', action="store_true", default=False, help="""Monitor dpkg, aptitude and apt-get log""")
+parser.add_argument('--print-shell', '-s', action='store_true', default=False, help="""Print executed shell script.""")
+
+args=parser.parse_args()
+choix = args.packages
+psh = args.print_shell
+
+SH_SYS = """/usr/bin/multitail -F /etc/multitailrc -N 300 -s 2 -cS auth /var/log/auth.log \
+-cS kern /var/log/kern.log -cS daemon /var/log/daemon.log -cS sys_log /var/log/syslog -cS user /var/log/user.log"""
+SH_PKG = """/usr/bin/multitail -F /etc/multitailrc -N 300 -cS apt /var/log/aptitude -cS dpkg /var/log/dpkg.log"""
+
+if os.geteuid():
+    print("logspynow must be launched as root.\nTry to lauch it with 'sudo logspynow'.")
+    parser.print_usage()
+    exit()
+
+if psh:
+    print(SH_SYS+'\n\n'+SH_PKG)
+    exit(0)
+
+if not choix:
+    os.system(SH_SYS)
+if choix:
+   os.system(SH_PKG)

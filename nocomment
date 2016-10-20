@@ -1,0 +1,77 @@
+#!/usr/bin/python3.4
+# -*-coding:UTF8 -*
+#
+# Copyright 2016 Charles Daudré-Vignier <daudre.vignier.charles@narod.ru>
+#
+#    'nocomment' is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    any later version.
+#
+#    'nocomment' is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with 'nocomment'.  If not, see <http://www.gnu.org/licenses/>.
+
+from os import system
+import argparse
+
+parser = argparse.ArgumentParser(description="""Efface tout les commentaires (#) et lignes vide d'un fichier, crée une copie avec les commentaires""")
+parser.add_argument('ncfile', action="store", type=str, help='Fichier à traiter')
+parser.add_argument('-o', '--output', action='store', type=str, help='Specifie le nom du fichier en sortie')
+parser.add_argument('-n', action="store", default='0', type=int, help='Indique le nombre de ligne du header à conserver')
+parser.add_argument('-e','--editor', action="store", type=str, help="""Ouvre le fichier en sortie avec un éditeur de texte si spécifié sinon le ficier est renvoyé sur la sortie standard""")
+parser.add_argument('-r', action="store_true", default=False, help="""Ne pas créer de copie""")
+parser.add_argument('-s', action="store_true", default=False, help="""Simule l'execution et renvoie le script shell généré sur la sortie standard""")
+parser.add_argument('-g', action="store_true", default=False, help=""" La marque de commentaire devient (")""")
+parser.add_argument('-xs', action="store_true", default=False, help="""Simule l'execution et renvoie le fichier généré sur la sortie standard ou sur un éditeur si spécifié par l'option (-e)""")
+
+args=parser.parse_args()
+
+ncfile=args.ncfile
+output=args.output
+header=args.n
+editor=args.editor
+rm=args.r
+simule=args.s
+com=args.g
+xsimule=args.xs
+
+if xsimule and not editor:
+    editor='cat'
+if com:
+    mrk='"'
+elif not com:
+    mrk='#'
+if not output:
+    shellscript="""cp {0} {0}_docu;head -n {1} {0}>{0}_header&&cat {0}_header>{0}&&rm {0}_header;cat {0}_docu|grep -Ev -e '^[[:blank:]]*({2}|$)'>>{0};""".format(ncfile,header,mrk)
+else:
+    shellscript="""cp {2} {0};head -n {1} {0}>{0}_header&&cat {0}_header>{0}&&rm {0}_header;cat {2}|grep -Ev -e '^[[:blank:]]*({3}|$)'>>{0};""".format(output,header,ncfile,mrk)
+if rm:
+    shellscript=shellscript+"rm "+ncfile+"_docu;"
+if editor:
+    if not output:
+        shellscript=shellscript+"""{0} {1}""".format(editor,ncfile)
+    elif output:
+        shellscript=shellscript+"""{0} {1}""".format(editor,output)
+if simule or xsimule:
+    if xsimule:
+        if not output:
+            shellscript=shellscript+"""&&rm {0}&&mv {0}_docu {0};""".format(ncfile)
+            if simule:
+                print(shellscript)
+            elif not simule:
+                system(shellscript)
+        elif output:
+            shellscript=shellscript+"""&&rm {0};""".format(output)
+            if simule:
+                print(shellscript)
+            elif not simule:
+                system(shellscript)
+    elif simule:
+        print(shellscript)
+elif not simule:
+    system(shellscript)

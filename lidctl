@@ -1,0 +1,64 @@
+#!/bin/bash
+
+# Copyright 2016 Charles Daudré-Vignier <daudre.vignier.charles@narod.ru>
+
+#    'lidctl' is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    any later version.
+#
+#    'lidctl' is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with 'lidctl'.  If not, see <http://www.gnu.org/licenses/>.
+
+
+# Ce script permet  de controler l'action produite par la fermeture du couvercle de l'ordinateur. Les options disponibles sont :
+#   lidctl help    : Affiche l'aide
+#   lidctl suspend : Si le couvercle est fermé le laptop se met en veille.
+#   lidctl ignore  : Si le couvercle est fermé il ne se passe rien.
+#   lidctl state   : Affiche l'état courant : suspend ou ignore.
+
+
+main(){
+    # $1 - option
+
+    OPT=$1
+
+    declare -r CONFILE="/etc/systemd/logind.conf"
+    if [ -e $CONFILE ]; then
+        :
+    else
+        echo "Attention, le fichier $CONFILE n'existe pas !"
+        exit 1
+    fi
+
+    if [ "$#" -gt 1 ]; then
+        echo "Le script ne requiert qu'un argument"
+        exit 1
+    fi
+
+    if [ "$#" -eq 0 ]; then
+        echo "Veuillez rentrer un argument (voir lidctl help)"
+        exit 1
+    fi
+
+    case $OPT in
+        'suspend') sed -i "s/HandleLidSwitch=.*$/HandleLidSwitch=suspend/g" $CONFILE && systemctl restart systemd-logind.service
+        ;;
+        'ignore' ) sed -i "s/HandleLidSwitch=.*$/HandleLidSwitch=ignore/g" $CONFILE && systemctl restart systemd-logind.service
+        ;;
+        'state'  ) STATE=$(/bin/grep "HandleLidSwitch" $CONFILE | /usr/bin/awk -F '=' '{print $2}') ;  echo "Etat actuel : $STATE"
+        ;;
+        'help'   )  echo -e "lidctl permet de controler l'action produite par la fermeture du couvercle de l'ordinateur.\n\nLes options disponibles sont :\n  lidctl help    : Affiche cette \
+aide.\n  lidctl suspend : Si le couvercle est fermé le laptop se met en veille.\n  lidctl ignore  : Si le couvercle est fermé il ne se passe rien.\n  lidctl state   : Affiche l'état \
+courant : suspend ou ignore."
+        ;;
+        * ) echo -e "Option inconnue, les options valides sont :\n    lidctl help\n    lidctl suspend\n    lidctl ignore\n    lidctl state"
+    esac
+}
+
+main "$@"

@@ -1,0 +1,86 @@
+#!/bin/zsh
+
+# Copyright 2016 Charles Daudré-Vignier <daudre.vignier.charles@narod.ru>
+
+#    'evening-music.sh' is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    any later version.
+#
+#    'evening-music.sh' is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with 'evening-music.sh'.  If not, see <http://www.gnu.org/licenses/>.
+
+
+
+# Permet de mettre amarok en pause au bout d'un temps donné (une heure par défaut sans argument), ce script sert par exemple lorsqu'on s'endort en musique et qu'on ne désire pas
+# se reveiller avec la musique qui est toujours jouée ;)
+
+# Codes de sortie :
+# 0 - All is ok
+# 1 - Amarok est déjà en pause
+# 2 - L'option 'help' a été invoquée
+
+main(){
+    PID=$$
+    PIDFILE=$HOME/.run/evening-music.pid
+    pid_test(){
+        [ -f $PIDFILE ] && previousPID=$(cat $PIDFILE) && echo "Il semble que le script aie déja été lancé sous le pid $previousPID" && exit
+    }
+    sub(){
+        pid_test
+        echo $PID > $PIDFILE
+        echo "Amarok will be paused in $FIRSTCHARS$LASTCHAR" && \
+        sleep $TSLEEP && \
+        qdbus org.kde.amarok /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.Pause && \
+        rm $HOME/.run/evening-music.pid
+        exit 0 ;
+    }
+
+
+
+    [[ "$1" == "help" ]] && \
+    echo "Syntaxe :\nevening-music [help] OR [TIME][SUFFIXE]\nTIME must be an integer\nSUFFIXE must be [s], [m] or [h]" && \
+    exit 2 ;
+
+    PLAYINGSTATUS=$(
+        qdbus --literal org.kde.amarok /Player org.freedesktop.MediaPlayer.GetStatus | \
+        awk '{print $3}' | \
+        sed 's/.$//' ;
+    )
+    [[ "$PLAYINGSTATUS" == "1" ]] && \
+        echo "Amarok est déjà en pause" && \
+        exit 1 ;
+
+    TSLEEP=$1 ;
+
+    [ -z "${TSLEEP}" ] && \
+        { TSLEEP="30m" } ;
+    LASTCHAR=$(
+        echo $TSLEEP|grep -o '.$'
+    ) ;
+    FIRSTCHARS=$(
+        echo $TSLEEP|sed 's/.$//'
+    ) ;
+
+    [[ $FIRSTCHARS =~ "^[0-9]+$" ]] ||
+        error[1]="1" ;
+    [ "$LASTCHAR" != "s" ] && [ "$LASTCHAR" != "m" ] && [ "$LASTCHAR" != "h" ] && \
+        error[2]="1" ;
+    [ -n "$error" ] && \
+        echo "Usage: [TIME][SUFFIXE]" ;
+    [ "$error[1]" -eq "1" ] && \
+        echo "TIME must be an integer" ;
+    [ "$error[2]" -eq "1" ] && \
+        echo "SUFFIXE must be [s], [m] or [h]" ;
+    [ -n "$error" ] && \
+        exit 1
+
+    sub &
+}
+
+main "$@"

@@ -1,0 +1,110 @@
+#!/usr/bin/python3.4
+# -*-coding:UTF8 -*
+# Copyright 2016 Charles Daudré-Vignier <daudre.vignier.charles@narod.ru>
+#    'todo' is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    any later version.
+#
+#    'todo' is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with 'todo'.  If not, see <http://www.gnu.org/licenses/>.
+
+import os
+import argparse
+from lib.todo_task import *
+
+parser = argparse.ArgumentParser(description="A simple todo list manager.")
+parser.add_argument('-d', '--date', action = "store", type = str, help = 'Date for task (syntax : day-month-year).')
+parser.add_argument('-t', '--text', action = "store", type = str, help = 'Task description.')
+parser.add_argument('-r', '--remove', action = "store", nargs = '+', type = str, help = "Remove a task.")
+parser.add_argument('-u', '--update', action = "store", type = str, help = "Update a task.")
+parser.add_argument('-n', '--new', action = "store", type = str, help = "New task.")
+parser.add_argument('-l', '--list', action = "store_true", default = False, help = "List tasks.")
+
+args = parser.parse_args()
+
+task_date = args.date
+task_text = args.text
+remove_task = args.remove
+update_task = args.update
+new_task = args.new
+ask_list = args.list
+
+HOME = os.environ['HOME']
+SAVEFILE = HOME+'/.todo-task'
+
+
+if not remove_task and not update_task and not new_task and not ask_list:
+    parser.print_help()
+    exit()
+
+# Get or create task_list
+if os.path.isfile(SAVEFILE):
+    task_list = load_tasks(SAVEFILE)
+else:
+    task_list = {}
+
+raise Exception()
+
+# Print task list
+if ask_list:
+    for i in task_list.keys():
+        print("""\x1b[31;1m[\x1b[33;1m {task_name} \x1b[31;1m]\x1b[0m
+\x1b[34;1m * \x1b[0mDate :
+{task_date}
+\x1b[34;1m * \x1b[0mDescription :
+{task_text}\n""".format(task_name=i, task_date=task_list[i]['date'], task_text=task_list[i]['text']))
+    exit(0)
+
+# Format date if not None
+if task_date:
+    task_date = dater(task_date)
+
+# Format text if not None
+if task_text:
+    task_text = task_text.replace('\\n', '\n')
+
+# New task
+if new_task:
+    if new_task in task_list:
+        print(new_task + ": already exist, use --update for owerwrite.")
+        exit(1)
+    if not task_text:
+        print("You cannot create a new task without à descriptive text (option --text)")
+        exit(1)
+    task_list[new_task]={'date': task_date, 'text': task_text}
+    save_tasks(task_list, SAVEFILE)
+    exit(0)
+
+# Remove task
+if remove_task:
+    for task in remove_task:
+        if not task in task_list.keys():
+            print('No task have name: ' + task)
+        else :
+            task_list.pop(task)
+            save_tasks(task_list, SAVEFILE)
+
+# Update task
+if update_task:
+    if not update_task in task_list.keys():
+        print('No task have name: ' + update_task)
+        exit(0)
+    if not task_date and not task_text:
+        print('No change done for task : ' + update_task)
+    if task_date:
+        task_list[update_task]['date'] = task_date
+    if task_text:
+        task_list[update_task]['text'] = task_text
+    save_tasks(task_list, SAVEFILE)
+
+
+
+
+
+
