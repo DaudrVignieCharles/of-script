@@ -18,6 +18,7 @@
 
 import os
 import argparse
+import textwrap
 import lib.advtouch as libadvtouch
 import etc.advtouch_conf as advtouch_conf
 import lib.lib_generic as ofscript_generic
@@ -40,17 +41,15 @@ if not os.geteuid():
 
 # Get script argument from command-line
 
-parser = argparse.ArgumentParser(description='See --H or --verbose-help for description.')
-if '-H' in os.sys.argv or '--verbose-help' in os.sys.argv:
-    print("""advtouch : Generate file based on his file type.
+parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=textwrap.dedent("""\
+advtouch : Generate file based on his file type.
+
 File types are Python (2.7-3.4), C, C++, Bash, ZSH, desktop.
 File contain :  copyright (except for desktop file),
                 useful include for C and C++,
                 the good shebang for Python, Bash and ZSH,
-                and file is executable for Python, Bash and ZSH.
-'--desktop' option run an interactive mode.""")
-    exit()
-parser.add_argument('-H', '--verbose-help', action = 'store_true', default = False, help = 'Verbose help, description of advtouch')
+                and file is executable for Python, Bash and ZSH."""), epilog="""\
+Note that '--desktop' option run an interactive mode.""")
 parser.add_argument('file', action = "store", type = str, help = 'Place the output into <file>')
 parser.add_argument('-p', '--python', action = "store_true", default = False, help = 'Generate Python 3.4 file')
 parser.add_argument('-o','--oldpython', action = 'store_true', default = False, help = 'Generate Python 2.7 file')

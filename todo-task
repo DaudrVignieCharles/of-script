@@ -18,30 +18,51 @@ import os
 import argparse
 from lib.todo_task import *
 
-parser = argparse.ArgumentParser(description="A simple todo list manager.")
-parser.add_argument('-d', '--date', action = "store", type = str, help = 'Date for task (syntax : day-month-year).')
-parser.add_argument('-t', '--text', action = "store", type = str, help = 'Task description.')
-parser.add_argument('-r', '--remove', action = "store", nargs = '+', type = str, help = "Remove a task.")
-parser.add_argument('-u', '--update', action = "store", type = str, help = "Update a task.")
-parser.add_argument('-n', '--new', action = "store", type = str, help = "New task.")
-parser.add_argument('-l', '--list', action = "store_true", default = False, help = "List tasks.")
+parser = argparse.ArgumentParser(description="A simple todo list manager.", epilog="")
+parser.add_argument('-d', '--date', action="store", type=str, help='Date for task (syntax : day-month-year).')
+parser.add_argument('-t', '--text', action="store", type=str, help='Task description.')
+parser.add_argument('-r', '--remove', action="store", metavar='TASK', nargs='+', type=str, help="Remove a task.")
+parser.add_argument('-u', '--update', action="store", nargs='+', metavar=('TASK', 'NEW NAME'), type=str, help="Update a task. You can specify NEW NAME to rename task")
+parser.add_argument('-n', '--new', action = "store", metavar='TASK', type=str, help="New task.")
+parser.add_argument('-k', '--tags', action="store", nargs='+', metavar='TAG', type=str, help="Specify tags for a task")
+parser.add_argument('-l', '--list', action = "store_true", default=False, help = "List tasks.")
 
 args = parser.parse_args()
 
 task_date = args.date
 task_text = args.text
+task_tags = args.tags
 remove_task = args.remove
 update_task = args.update
 new_task = args.new
 ask_list = args.list
 
+if not remove_task and not update_task and not new_task and not ask_list:
+    if task_date or task_tags or task_text:
+        parser.print_usage()
+        if task_date:
+            print("todo-task: error: argument -d/--date : you must specify -r/--remove or -u/--update or -n/--new")
+        if task_tags:
+            print("todo-task: error: argument -k/--tags : you must specify -r/--remove or -u/--update or -n/--new or -k/--tags")
+        if task_text:
+            print("todo-task: error: argument -t/--text : you must specify -r/--remove or -u/--update or -n/--new")
+    else:
+        parser.print_help()
+    exit()
+
+if update_task:
+    update_name = update_task[0]
+    if len(update_task) == 2:
+        update_new_name = update_task[1]
+    elif len(update_task) > 2:
+        parser.print_usage()
+        print("todo-task: error: argument -u/--update: no more than two arguments")
+        exit(1)
+    else:
+        update_new_name = None
+
 HOME = os.environ['HOME']
 SAVEFILE = HOME+'/.todo-task'
-
-
-if not remove_task and not update_task and not new_task and not ask_list:
-    parser.print_help()
-    exit()
 
 # Get or create task_list
 if os.path.isfile(SAVEFILE):
@@ -49,16 +70,21 @@ if os.path.isfile(SAVEFILE):
 else:
     task_list = {}
 
-raise Exception()
-
 # Print task list
 if ask_list:
-    for i in task_list.keys():
-        print("""\x1b[31;1m[\x1b[33;1m {task_name} \x1b[31;1m]\x1b[0m
-\x1b[34;1m * \x1b[0mDate :
-{task_date}
-\x1b[34;1m * \x1b[0mDescription :
-{task_text}\n""".format(task_name=i, task_date=task_list[i]['date'], task_text=task_list[i]['text']))
+    if task_tags:
+        isdone=[]
+        for i in task_list.keys():
+            for j in task_tags:
+                if i in isdone:
+                    pass
+                else:
+                    if j in task_list[i]['tags']:
+                        isdone.append(i)
+                        print_task(i, task_list)
+    else:
+        for i in task_list.keys():
+            print_task(i,  task_list)
     exit(0)
 
 # Format date if not None
@@ -77,7 +103,7 @@ if new_task:
     if not task_text:
         print("You cannot create a new task without à descriptive text (option --text)")
         exit(1)
-    task_list[new_task]={'date': task_date, 'text': task_text}
+    task_list[new_task]={'date': task_date, 'text': task_text, 'tags': task_tags}
     save_tasks(task_list, SAVEFILE)
     exit(0)
 
@@ -92,16 +118,22 @@ if remove_task:
 
 # Update task
 if update_task:
-    if not update_task in task_list.keys():
-        print('No task have name: ' + update_task)
+    if not update_name in task_list.keys():
+        print('No task named: ' + update_name)
         exit(0)
-    if not task_date and not task_text:
-        print('No change done for task : ' + update_task)
+    if not task_date and not task_text and not task_tags and not update_new_name:
+        print('No change done for task : ' + update_name)
     if task_date:
-        task_list[update_task]['date'] = task_date
+        task_list[update_name]['date'] = task_date
     if task_text:
-        task_list[update_task]['text'] = task_text
+        task_list[update_name]['text'] = task_text
+    if task_tags:
+        task_list[update_name]['tags'] = task_tags
+    if update_new_name:
+        task_list[update_new_name] = task_list.pop(update_name)
     save_tasks(task_list, SAVEFILE)
+
+
 
 
 

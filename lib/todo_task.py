@@ -27,6 +27,20 @@ def dater(task_date):
         exit(1)
 
 
+def tags_pretty_print(tags):
+    return ', '.join(tags)
+
+
+def print_task(task_name,task_list):
+    print("""\x1b[31;1m[\x1b[33;1m {task_name} \x1b[31;1m]\x1b[0m
+\x1b[34;1m * \x1b[0mDate :
+{task_date}
+\x1b[34;1m * \x1b[0mDescription :
+{task_text}
+\x1b[34;1m * \x1b[0mTags :
+{task_tags}\n""".format(task_name=task_name, task_date=task_list[task_name]['date'], task_text=task_list[task_name]['text'], task_tags=tags_pretty_print(task_list[task_name]['tags'])))
+
+
 def load_tasks(SAVEFILE):
     with open(SAVEFILE, 'r') as savefile:
         task_list = json.load(savefile)
